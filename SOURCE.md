@@ -2,7 +2,7 @@
 
 ## Proposal 1: Steam player activity vs. Twitch viewership (preferred)
 
-**What it is:** We want to compare how many people are currently playing a PC game on Steam with how many are watching live streams of the same game on Twitch. By collecting both numbers at regular intervals, we could examine whether player activity and viewership rise and fall together and whether they follow similar daily or weekly patterns. We would choose a game with consistent activity on both platforms; *Stardew Valley* is our current example, not a final selection.
+**The Idea:** We want to compare how many people are currently playing a PC game on Steam with how many are watching live streams of the same game on Twitch. By collecting both numbers at regular intervals, we could examine whether player activity and viewership rise and fall together and whether they follow similar daily or weekly patterns. We would choose a game with consistent activity on both platforms, *Stardew Valley* is our current example, not a final selection.
 
 - **Content:** Steam provides the number of players currently connected to a game. Twitch provides live streams for a game, with a viewer count for each stream. We would record the game, collection time, Steam player count, and Twitch viewer counts (which can be summed for a game-wide estimate).
 - **URLs:**
@@ -10,9 +10,9 @@
   - Twitch streams: https://api.twitch.tv/helix/streams?game_id=490744&first=100 (`490744` was verified as *Stardew Valley*'s Twitch game ID).
   - Twitch game ID lookup: https://api.twitch.tv/helix/games?name=Stardew%20Valley
 - **Update frequency:** These are live measurements that can change throughout the day. **Planned collection:** approximately once every two hours.
-- **Expected sample size:** The authenticated sample below contained **31,801 bytes** of Twitch stream responses across two requests (including the final empty page) and **46 bytes** from Steam: **31,847 bytes per collection**, approximately **31.85 KB**. At 12 collections per day for 13 weeks (1,092 collections), similar responses would total **34,776,924 bytes**, approximately **34.8 MB before compression**. The one-time game-ID lookup was another **157 bytes**. A provisional threefold allowance would be about **104.3 MB** for response bodies, leaving room below the project's 500 MB limit for metadata and derived outputs. This allowance is a planning assumption, not a measured maximum; one sample cannot establish the peak number of streams or guarantee the final storage requirement. Actual total usage must be monitored.
+- **Expected sample size:** The authenticated sample below contained **31,801 bytes** of Twitch stream responses across two requests (including the final empty page) and **46 bytes** from Steam: **31,847 bytes per collection**, approximately **31.85 KB**. At 12 collections per day for 13 weeks (1,092 collections), similar responses would total **34,776,924 bytes**, approximately **34.8 MB before compression**. The one-time game-ID lookup was another **157 bytes**. A provisional threefold allowance would be about **104.3 MB** for response bodies, leaving room below the project's 500 MB limit for metadata and derived outputs. This allowance is a planning assumption, not a measured maximum as one sample cannot establish the peak number of streams or guarantee the final storage requirement. 
 - **Key / password:** Steam does not require an API key for this endpoint. Twitch requires a free developer application, a Client ID, and an OAuth access token obtained using a Client Secret. Credentials would be kept outside the repository.
-- **Data sample:** Actual authenticated Twitch responses and a Steam response collected on **2026-11-06 between 14:14:25 and 14:14:27 UTC**. These are real observations; retrieval times are not guaranteed exact measurement times, and Steam may cache its responses.
+- **Data sample:** Actual authenticated Twitch responses and a Steam response collected on **2026-11-06 between 14:14:25 and 14:14:27 UTC**. These are real observations - retrieval times are not guaranteed exact measurement times, and Steam may cache its responses.
 
 Steam response, for `appid=413150`:
 
@@ -25,7 +25,7 @@ Steam response, for `appid=413150`:
 }
 ```
 
-Twitch: selected fields from the first returned stream record, for `game_id=490744`. Other fields and records are omitted from this excerpt; the measured size above refers to the full response bodies, not this shortened example.
+Twitch: selected fields from the first returned stream record, for `game_id=490744`. Other fields and records are omitted from this excerpt, the measured size above refers to the full response bodies, not this shortened example.
 
 ```json
 {
@@ -42,7 +42,7 @@ Twitch: selected fields from the first returned stream record, for `game_id=4907
 }
 ```
 
-**Collection check:** The first Twitch page returned **63 streams** in **31,774 bytes** and supplied a pagination cursor. Following that cursor returned an empty final page of **27 bytes**, with no further cursor. There were **63 unique stream IDs**; summing their reported `viewer_count` values gave **236 viewers**. Steam reported **73,996 players** in its response fetched during the same collection window. The viewer sum is an estimate across sequential requests, not an atomic snapshot or a count of unique people. One collection demonstrates access and sample size, not a relationship between the two populations.
+**Collection check:** The first Twitch page returned **63 streams** in **31,774 bytes** and supplied a pagination cursor. Following that cursor returned an empty final page of **27 bytes**, with no further cursor. There were **63 unique stream IDs**, summing their reported `viewer_count` values gave **236 viewers**. Steam reported **73,996 players** in its response fetched during the same collection window. The viewer sum is an estimate across sequential requests, not an atomic snapshot or a count of unique people. One collection demonstrates access and sample size, not a relationship between the two populations.
 
 **Authentication tested:** A dedicated confidential application was registered and its app access token was validated before calling Get Games and Get Streams. The `client_credentials` flow was used to read public data without requesting channel-management permissions. Client Secret and tokens are kept outside the repository and are not part of the data samples.
 
@@ -58,10 +58,10 @@ Twitch: selected fields from the first returned stream record, for `game_id=4907
   - Possible alternative — Hazi Hinam public price-file portal: https://shop.hazi-hinam.co.il/Prices
   - Possible alternative — Shufersal price-transparency portal: https://prices.shufersal.co.il/ 
   - These portals publish branch-level price and promotion information, commonly as compressed XML files (`.gz`). Relevant file categories include `PriceFull`, `PromoFull`, and store information, although exact availability and file details can vary by chain.
-- **Update frequency:** The Carrefour listing checked on 2026-11-06 contained timestamped `PriceFull` and `PromoFull` files and multiple incremental `Price` updates during the day. **Planned collection:** approximately once a day; the longer-term publication schedule would be verified before implementation.
-- **Expected sample size:** The four downloaded full files (prices and promotions for branches 010 and 009) total **2,300,619 compressed bytes**, approximately **2.30 MB per daily collection**. At one collection a day for 13 weeks (91 days), this would be approximately **209.4 MB**, assuming similar sizes. This is below the project's 500 MB limit, but future growth and other stored files must also be monitored. These files include many products; the processed protein-product dataset would be much smaller.
+- **Update frequency:** The Carrefour listing checked on 2026-11-06 contained timestamped `PriceFull` and `PromoFull` files and multiple incremental `Price` updates during the day. **Planned collection:** approximately once a day, however the longer-term publication schedule would be verified before implementation.
+- **Expected sample size:** The four downloaded full files (prices and promotions for branches 010 and 009) total **2,300,619 compressed bytes**, approximately **2.30 MB per daily collection**. At one collection a day for 13 weeks (91 days), this would be approximately **209.4 MB**, assuming similar sizes. This is below the project's 500 MB limit, but future growth and other stored files must also be monitored. These files include many products, leading to a much smaller processed protein-product dataset.
 - **Key / password:** Carrefour's listing and the four sample files were retrieved without a login, subscription, or API key. Download links contain the publication date and filename, so collection must obtain current links from the listing. Access to the alternative chains has not been tested.
-- **Data sample:** Actual price and promotion files downloaded on **2026-11-06 at approximately 13:53 UTC**, from Carrefour's public portal, without credentials. The sample below is from branch **010**, listed by the portal as Carrefour Hyper Kfar Saba. The portal's product name is preserved as supplied, including its abbreviation. These are selected XML fields from the downloaded files, retaining their original hierarchy and values; other fields, products, and promotion items are omitted.
+- **Data sample:** Actual price and promotion files downloaded on **2026-11-06 at approximately 13:53 UTC**, from Carrefour's public portal, without credentials. The sample below is from branch **010**, listed by the portal as Carrefour Hyper Kfar Saba. The portal's product name is preserved as supplied, including its abbreviation. These are selected XML fields from the downloaded files, retaining their original hierarchy and values. Other fields, products, and promotion items are omitted.
 
 Files downloaded to check access and compressed sample sizes:
 
