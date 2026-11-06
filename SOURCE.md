@@ -10,35 +10,20 @@
   - Twitch streams: https://api.twitch.tv/helix/streams?game_id=GAME_ID&first=100
   - Twitch game ID lookup: https://api.twitch.tv/helix/games?name=Stardew%20Valley
 - **Update frequency:** These are live measurements that can change throughout the day. **Planned collection:** approximately once every two hours.
-- **Expected sample size:** About **10–200 KB per collection** for one game, depending mostly on the number of Twitch streams and response pages. At 12 collections per day for 13 weeks, this would be roughly **11–220 MB**. These are preliminary estimates, to be checked with actual responses.
+- **Expected sample size:** About **10–200 KB per collection** for one game, depending mostly on the number of Twitch streams and response pages. At 12 collections per day for 13 weeks, this would be roughly **11–220 MB**. These are preliminary estimates: the sampled Steam response was only 46 bytes; the combined estimate is driven mainly by Twitch, whose authenticated response size has not yet been measured.
 - **Key / password:** Steam does not require an API key for this endpoint. Twitch requires a free developer application, a Client ID, and an OAuth access token obtained using a Client Secret. Credentials would be kept outside the repository.
-- **Data sample:** Shortened examples of the expected JSON response format (**illustrative values, not live observations**):
+- **Data sample:** Actual Steam response retrieved on **2026-11-06 at approximately 13:51 UTC**, for *Stardew Valley* (`appid=413150`), from the Steam URL above. The response body was **46 bytes**. The API may cache responses, so this is the retrieval time rather than a guaranteed exact measurement time.
 
-Steam:
 ```json
 {
   "response": {
-    "player_count": 45000,
+    "player_count": 76077,
     "result": 1
   }
 }
 ```
 
-Twitch (one stream shown):
-```json
-{
-  "data": [
-    {
-      "user_name": "ExampleStreamer",
-      "game_id": "GAME_ID",
-      "game_name": "Stardew Valley",
-      "viewer_count": 125,
-      "started_at": "2026-11-05T12:00:00Z"
-    }
-  ],
-  "pagination": {"cursor": "..."}
-}
-```
+**Twitch access check:** A live Twitch sample has not yet been collected. The official [Get Streams documentation](https://dev.twitch.tv/docs/api/reference/#get-streams) requires an app or user access token and a Client ID. The Steam sample above is the real data sample for this proposal; it does not establish that Twitch collection has been tested. Before implementing this proposal, we would register the free developer application, resolve the game's Twitch ID, and test an authenticated request. No example viewer counts are presented as observations.
 
 **Practical consideration:** Twitch reports viewers per stream, so totals require combining streams; results may span multiple pages (up to 100 streams per page). Steam players and Twitch viewers are different populations, so we would study patterns of association rather than assume one causes the other.
 
@@ -52,26 +37,72 @@ Twitch (one stream shown):
   - Possible alternative — Hazi Hinam public price-file portal: https://shop.hazi-hinam.co.il/Prices
   - Possible alternative — Shufersal price-transparency portal: https://prices.shufersal.co.il/ 
   - These portals publish branch-level price and promotion information, commonly as compressed XML files (`.gz`). Relevant file categories include `PriceFull`, `PromoFull`, and store information, although exact availability and file details can vary by chain.
-- **Update frequency:** The retailers publish updated price and promotion information regularly; full files are generally refreshed daily, with some changes appearing more frequently. **Planned collection:** approximately once a day.
-- **Expected sample size:** For two branches, we estimate approximately 1–3 MB of compressed XML files per daily collection, or roughly 90–270 MB over 13 weeks. This estimate refers to the original supermarket files which contain information about many products. Our processed dataset would be much smaller, containing only information relevant to our selected protein products. Actual file sizes will be verified before implementation to ensure we stay within the project's 500 MB storage limit.
-- **Key / password:** The listed portals provide public file listings without a paid subscription or private API key. Downloading automatically may require retrieving current download links. We would confirm scripted access before choosing an alternative chain.
-- **Data sample:** Simplified example of the expected XML promotion format (**illustrative, not an actual advertised offer**):
+- **Update frequency:** The Carrefour listing checked on 2026-11-06 contained timestamped `PriceFull` and `PromoFull` files and multiple incremental `Price` updates during the day. **Planned collection:** approximately once a day; the longer-term publication schedule would be verified before implementation.
+- **Expected sample size:** The four downloaded full files (prices and promotions for branches 010 and 009) total **2,300,619 compressed bytes**, approximately **2.30 MB per daily collection**. At one collection a day for 13 weeks (91 days), this would be approximately **209.4 MB**, assuming similar sizes. This is below the project's 500 MB limit, but future growth and other stored files must also be monitored. These files include many products; the processed protein-product dataset would be much smaller.
+- **Key / password:** Carrefour's listing and the four sample files were retrieved without a login, subscription, or API key. Download links contain the publication date and filename, so collection must obtain current links from the listing. Access to the alternative chains has not been tested.
+- **Data sample:** Actual price and promotion files downloaded on **2026-11-06 at approximately 13:53 UTC**, from Carrefour's public portal, without credentials. The sample below is from branch **010**, listed by the portal as Carrefour Hyper Kfar Saba. The portal's product name is preserved as supplied, including its abbreviation. These are selected XML fields from the downloaded files, retaining their original hierarchy and values; other fields, products, and promotion items are omitted.
+
+Files downloaded to check access and compressed sample sizes:
+
+| Branch | Source file | Compressed bytes |
+|---|---|---:|
+| 010 | [PriceFull](https://prices.carrefour.co.il/20261106/PriceFull7290055700007-001-010-20261106-051009.gz) | 883,097 |
+| 010 | [PromoFull](https://prices.carrefour.co.il/20261106/PromoFull7290055700007-001-010-20261106-051121.gz) | 238,210 |
+| 009 | [PriceFull](https://prices.carrefour.co.il/20261106/PriceFull7290055700007-001-009-20261106-051002.gz) | 968,182 |
+| 009 | [PromoFull](https://prices.carrefour.co.il/20261106/PromoFull7290055700007-001-009-20261106-051055.gz) | 211,130 |
+
+Price-file excerpt:
 
 ```xml
-<Promotion>
-  <PromotionID>EXAMPLE-001</PromotionID>
-  <PromotionDescription>מבצע על יוגורט חלבון</PromotionDescription>
-  <PromotionStartDate>2026-11-05</PromotionStartDate>
-  <PromotionEndDate>2026-11-11</PromotionEndDate>
-  <Groups>
-    <Group>
-      <PromotionItems>
-        <PromotionItem><ItemCode>7290000000000</ItemCode></PromotionItem>
-      </PromotionItems>
-    </Group>
-  </Groups>
-</Promotion>
+<Root>
+  <ChainID>7290055700007</ChainID>
+  <SubChainID>001</SubChainID>
+  <StoreID>010</StoreID>
+  <Items>
+    <Item>
+      <PriceUpdateTime>2025-06-03T08:29:14.000</PriceUpdateTime>
+      <ItemCode>7290116934020</ItemCode>
+      <ItemName>יוגורט חלבון גו 20 ג</ItemName>
+      <Quantity>200.00</Quantity>
+      <ItemPrice>6.50</ItemPrice>
+    </Item>
+  </Items>
+</Root>
 ```
+
+Promotion-file excerpt for the same product:
+
+```xml
+<Root>
+  <ChainID>7290055700007</ChainID>
+  <SubChainID>001</SubChainID>
+  <StoreID>010</StoreID>
+  <Promotions>
+    <Promotion>
+      <PromotionID>0011459283</PromotionID>
+      <PromotionDescription>יוגורט גו סמיך 0% יופלה עד 200 גרם</PromotionDescription>
+      <PromotionStartDateTime>2026-11-02T00:00:00.000</PromotionStartDateTime>
+      <PromotionEndDateTime>2026-12-11T23:59:00.000</PromotionEndDateTime>
+      <ClubID>0</ClubID>
+      <Groups>
+        <Group>
+          <GroupID>1</GroupID>
+          <PromotionItems>
+            <PromotionItem>
+              <ItemCode>7290116934020</ItemCode>
+              <RewardType>10</RewardType>
+              <MinQty>4</MinQty>
+              <DiscountedPrice>20.90</DiscountedPrice>
+            </PromotionItem>
+          </PromotionItems>
+        </Group>
+      </Groups>
+    </Promotion>
+  </Promotions>
+</Root>
+```
+
+The same `ItemCode` (`7290116934020`) appears in both files, demonstrating how a protein-labeled product can be matched to a promotion. `ItemPrice` is the listed regular price; `MinQty` and `DiscountedPrice` belong to a multi-buy promotion and must not be interpreted as a single-unit promotional price. Source promotion timestamps have no timezone offset; the UTC time above records retrieval only.
 
 **Practical consideration:** Price and promotion files are separate and must be matched by product code. Promotions take different forms (for example, multi-buy or club-member offers), so our initial focus would be on whether a product is on promotion, not necessarily calculating an exact percentage discount. We would choose one retailer after checking access and the course staff's approval.
 
