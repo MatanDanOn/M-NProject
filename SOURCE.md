@@ -7,25 +7,46 @@
 - **Content:** Steam provides the number of players currently connected to a game. Twitch provides live streams for a game, with a viewer count for each stream. We would record the game, collection time, Steam player count, and Twitch viewer counts (which can be summed for a game-wide estimate).
 - **URLs:**
   - Steam: https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=413150 (`413150` is *Stardew Valley*'s Steam app ID).
-  - Twitch streams: https://api.twitch.tv/helix/streams?game_id=GAME_ID&first=100
+  - Twitch streams: https://api.twitch.tv/helix/streams?game_id=490744&first=100 (`490744` was verified as *Stardew Valley*'s Twitch game ID).
   - Twitch game ID lookup: https://api.twitch.tv/helix/games?name=Stardew%20Valley
 - **Update frequency:** These are live measurements that can change throughout the day. **Planned collection:** approximately once every two hours.
-- **Expected sample size:** About **10–200 KB per collection** for one game, depending mostly on the number of Twitch streams and response pages. At 12 collections per day for 13 weeks, this would be roughly **11–220 MB**. These are preliminary estimates: the sampled Steam response was only 46 bytes; the combined estimate is driven mainly by Twitch, whose authenticated response size has not yet been measured.
+- **Expected sample size:** The authenticated sample below contained **31,801 bytes** of Twitch stream responses across two requests (including the final empty page) and **46 bytes** from Steam: **31,847 bytes per collection**, approximately **31.85 KB**. At 12 collections per day for 13 weeks (1,092 collections), similar responses would total **34,776,924 bytes**, approximately **34.8 MB before compression**. The one-time game-ID lookup was another **157 bytes**. A provisional threefold allowance would be about **104.3 MB** for response bodies, leaving room below the project's 500 MB limit for metadata and derived outputs. This allowance is a planning assumption, not a measured maximum; one sample cannot establish the peak number of streams or guarantee the final storage requirement. Actual total usage must be monitored.
 - **Key / password:** Steam does not require an API key for this endpoint. Twitch requires a free developer application, a Client ID, and an OAuth access token obtained using a Client Secret. Credentials would be kept outside the repository.
-- **Data sample:** Actual Steam response retrieved on **2026-11-06 at approximately 13:51 UTC**, for *Stardew Valley* (`appid=413150`), from the Steam URL above. The response body was **46 bytes**. The API may cache responses, so this is the retrieval time rather than a guaranteed exact measurement time.
+- **Data sample:** Actual authenticated Twitch responses and a Steam response collected on **2026-11-06 between 14:14:25 and 14:14:27 UTC**. These are real observations; retrieval times are not guaranteed exact measurement times, and Steam may cache its responses.
+
+Steam response, for `appid=413150`:
 
 ```json
 {
   "response": {
-    "player_count": 76077,
+    "player_count": 73996,
     "result": 1
   }
 }
 ```
 
-**Twitch access check:** A live Twitch sample has not yet been collected. The official [Get Streams documentation](https://dev.twitch.tv/docs/api/reference/#get-streams) requires an app or user access token and a Client ID. The Steam sample above is the real data sample for this proposal; it does not establish that Twitch collection has been tested. Before implementing this proposal, we would register the free developer application, resolve the game's Twitch ID, and test an authenticated request. No example viewer counts are presented as observations.
+Twitch: selected fields from the first returned stream record, for `game_id=490744`. Other fields and records are omitted from this excerpt; the measured size above refers to the full response bodies, not this shortened example.
 
-**Practical consideration:** Twitch reports viewers per stream, so totals require combining streams; results may span multiple pages (up to 100 streams per page). Steam players and Twitch viewers are different populations, so we would study patterns of association rather than assume one causes the other.
+```json
+{
+  "data": [
+    {
+      "id": "319290086886",
+      "user_name": "DaWhamBam",
+      "game_id": "490744",
+      "game_name": "Stardew Valley",
+      "viewer_count": 39,
+      "started_at": "2026-11-06T12:56:57Z"
+    }
+  ]
+}
+```
+
+**Collection check:** The first Twitch page returned **63 streams** in **31,774 bytes** and supplied a pagination cursor. Following that cursor returned an empty final page of **27 bytes**, with no further cursor. There were **63 unique stream IDs**; summing their reported `viewer_count` values gave **236 viewers**. Steam reported **73,996 players** in its response fetched during the same collection window. The viewer sum is an estimate across sequential requests, not an atomic snapshot or a count of unique people. One collection demonstrates access and sample size, not a relationship between the two populations.
+
+**Authentication tested:** A dedicated confidential application was registered and its app access token was validated before calling Get Games and Get Streams. The `client_credentials` flow was used to read public data without requesting channel-management permissions. Client Secret and tokens are kept outside the repository and are not part of the data samples.
+
+**Practical consideration:** Twitch reports viewers per stream, so totals require combining streams and following pagination (up to 100 streams per page). Because streams can change between page requests, duplicate stream IDs must be handled when aggregating. Steam players and Twitch viewers are different populations, so we would study patterns of association rather than assume one causes the other. API details: [Get Games](https://dev.twitch.tv/docs/api/reference/#get-games), [Get Streams](https://dev.twitch.tv/docs/api/reference/#get-streams), and [app access tokens](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow).
 
 ## Proposal 2: Promotions on protein-labeled products at Israeli supermarkets
 
