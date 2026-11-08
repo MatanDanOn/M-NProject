@@ -1,4 +1,4 @@
-# M_-N Project
+# M-N Project
 ### Full Names:
   ##### Matan Dan On
   ##### Nitzan Gavish
