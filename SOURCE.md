@@ -1,133 +1,94 @@
-# Data Source Proposals
+# SOURCE.md — Steam players vs. Twitch viewers (*Stardew Valley*)
 
-## Proposal 1: Steam player activity vs. Twitch viewership (preferred)
+## i. Approved data source
 
-**The Idea:** We want to compare how many people are currently playing a PC game on Steam with how many are watching live streams of the same game on Twitch. By collecting both numbers at regular intervals, we could examine whether player activity and viewership rise and fall together and whether they follow similar daily or weekly patterns. We would choose a game with consistent activity on both platforms, *Stardew Valley* is our current example, not a final selection.
+| Property | Steam Web API | Twitch API (Helix) |
+|---|---|---|
+| Name | `ISteamUserStats/GetNumberOfCurrentPlayers` | `Get Streams` (plus `Get Games` for the game-ID lookup) |
+| URL | `https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=413150` | `https://api.twitch.tv/helix/streams?game_id=490744&first=100` (lookup: `https://api.twitch.tv/helix/games?name=Stardew%20Valley`) |
+| Data format | JSON | JSON (paginated, up to 100 streams per page) |
+| Key / username required | No | Yes: a free Twitch developer application (Client ID + Client Secret) and an app access token (client-credentials flow). Credentials are stored outside the repository with `chmod 600`. |
+| License / terms | [Steam Web API Terms of Use](https://steamcommunity.com/dev/apiterms); limited to 100,000 calls per day | [Twitch Developer Services Agreement](https://legal.twitch.com/legal/developer-agreement); rate-limited per minute ([Twitch API rate limits](https://dev.twitch.tv/docs/api/guide/#twitch-rate-limits)) |
+| Collection frequency | Every 2 hours (12 collections per day) | Every 2 hours, in the same collection as Steam |
 
-- **Content:** Steam provides the number of players currently connected to a game. Twitch provides live streams for a game, with a viewer count for each stream. We would record the game, collection time, Steam player count, and Twitch viewer counts (which can be summed for a game-wide estimate).
-- **URLs:**
-  - Steam: https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=413150 (`413150` is *Stardew Valley*'s Steam app ID).
-  - Twitch streams: https://api.twitch.tv/helix/streams?game_id=490744&first=100 (`490744` was verified as *Stardew Valley*'s Twitch game ID).
-  - Twitch game ID lookup: https://api.twitch.tv/helix/games?name=Stardew%20Valley
-- **Update frequency:** These are live measurements that can change throughout the day. **Planned collection:** approximately once every two hours.
-- **Expected sample size:** The authenticated sample below contained **31,801 bytes** of Twitch stream responses across two requests (including the final empty page) and **46 bytes** from Steam: **31,847 bytes per collection**, approximately **31.85 KB**. At 12 collections per day for 13 weeks (1,092 collections), similar responses would total **34,776,924 bytes**, approximately **34.8 MB before compression**. The one-time game-ID lookup was another **157 bytes**. A provisional threefold allowance would be about **104.3 MB** for response bodies, leaving room below the project's 500 MB limit for metadata and derived outputs. This allowance is a planning assumption, not a measured maximum as one sample cannot establish the peak number of streams or guarantee the final storage requirement. 
-- **Key / password:** Steam does not require an API key for this endpoint. Twitch requires a free developer application, a Client ID, and an OAuth access token obtained using a Client Secret. Credentials would be kept outside the repository.
-- **Data sample:** Actual authenticated Twitch responses and a Steam response collected on **2026-11-06 between 14:14:25 and 14:14:27 UTC**. These are real observations - retrieval times are not guaranteed exact measurement times, and Steam may cache its responses.
+`413150` is the Steam app ID and `490744` is the Twitch game ID of *Stardew Valley*.
 
-Steam response, for `appid=413150`:
+A collection makes 1 Steam request and 3 Twitch requests (game lookup + 2 stream pages in the current sample). At 12 collections per day, this is far below both rate limits.
 
-```json
-{
-  "response": {
-    "player_count": 73996,
-    "result": 1
-  }
-}
+## ii. What is collected
+
+Each collection is saved as one JSON file under `raw/YYYY-mm-dd/HHMM.json` (UTC). The file contains:
+
+- **Steam:** the number of players currently in *Stardew Valley* (`player_count`) and a result flag (`result`).
+- **Twitch:** every live *Stardew Valley* stream at collection time, across all pages, with each stream's `viewer_count`.
+- **Metadata added by our collection:** retrieval start/end time (UTC), game name, Steam app ID and Twitch game ID.
+
+Example (`raw/2026-11-16/1810.json`): Steam reported 50,401 players; Twitch returned 87 live streams on 2 pages (the second page was empty), with 564 viewers in total.
+
+**Limitations:**
+
+- Steam players and Twitch viewers are different populations. We study how the two series move over time, not causation.
+- The Twitch viewer total is a sum over streams fetched in sequential page requests. It is not an atomic snapshot and not a count of unique people. Streams can shift between pages, so duplicate stream IDs must be removed before summing.
+- Steam may cache its responses, so the retrieval time is not guaranteed to be the exact measurement time.
+- Both values are snapshots every 2 hours. Changes between collections are not observed.
+
+## iii. Schema (`data/dataset.csv`)
+
+One row per collection (per raw file). The first line is a header.
+
+| Column | Content | Type / unit |
+|---|---|---|
+| `collected_at_utc` | Time the collection started | ISO 8601 timestamp, UTC (e.g. `2026-11-16T16:10:32+00:00`) |
+| `game_name` | Game the row describes | Text (`Stardew Valley`) |
+| `steam_player_count` | Players currently in the game on Steam | Integer, players. Empty if the Steam request failed or `result` ≠ 1 |
+| `twitch_viewer_count` | Sum of `viewer_count` over unique live streams | Integer, viewers (summed per stream). Empty if the Twitch request failed |
+| `twitch_stream_count` | Number of unique live streams | Integer, streams. `0` is a valid value (no live streams) |
+
+Example row, produced from the sample above:
+
+```csv
+collected_at_utc,game_name,steam_player_count,twitch_viewer_count,twitch_stream_count
+"2026-11-16T16:10:32+00:00","Stardew Valley",50401,564,87
 ```
 
-Twitch: selected fields from the first returned stream record, for `game_id=490744`. Other fields and records are omitted from this excerpt, the measured size above refers to the full response bodies, not this shortened example.
+## iv. Why these columns
 
-```json
-{
-  "data": [
-    {
-      "id": "319290086886",
-      "user_name": "DaWhamBam",
-      "game_id": "490744",
-      "game_name": "Stardew Valley",
-      "viewer_count": 39,
-      "started_at": "2026-11-06T12:56:57Z"
-    }
-  ]
-}
-```
+**Kept:**
 
-**Collection check:** The first Twitch page returned **63 streams** in **31,774 bytes** and supplied a pagination cursor. Following that cursor returned an empty final page of **27 bytes**, with no further cursor. There were **63 unique stream IDs**, summing their reported `viewer_count` values gave **236 viewers**. Steam reported **73,996 players** in its response fetched during the same collection window. The viewer sum is an estimate across sequential requests, not an atomic snapshot or a count of unique people. One collection demonstrates access and sample size, not a relationship between the two populations.
+- `collected_at_utc` is the time axis. Every comparison between the series depends on it.
+- `game_name` keeps each row self-describing. It also allows another game or source to be added later without changing the schema.
+- `steam_player_count` and `twitch_viewer_count` are the two series the project compares.
+- `twitch_stream_count` separates "more viewers per stream" from "more streams". It also makes zero-viewer rows easy to interpret.
 
-**Authentication tested:** A dedicated confidential application was registered and its app access token was validated before calling Get Games and Get Streams. The `client_credentials` flow was used to read public data without requesting channel-management permissions. Client Secret and tokens are kept outside the repository and are not part of the data samples.
+**Not kept:**
 
-**Practical consideration:** Twitch reports viewers per stream, so totals require combining streams and following pagination (up to 100 streams per page). Because streams can change between page requests, duplicate stream IDs must be handled when aggregating. Steam players and Twitch viewers are different populations, so we would study patterns of association rather than assume one causes the other. API details: [Get Games](https://dev.twitch.tv/docs/api/reference/#get-games), [Get Streams](https://dev.twitch.tv/docs/api/reference/#get-streams), and [app access tokens](https://dev.twitch.tv/docs/authentication/getting-tokens-oauth/#client-credentials-grant-flow).
+- `retrieval_finished_utc`: a collection takes about 2 seconds, which is negligible against a 2-hour interval.
+- `steam_app_id`, `twitch_game_id`, and the whole `twitch_game_lookup` object (`id`, `name`, `box_art_url`, `igdb_id`): constant for a single game. They are documented in section i instead.
+- Steam `result`: a status flag used only to validate `player_count`.
+- Per-stream fields (`user_id`, `user_login`, `user_name`, `title`, `tags`, `tag_ids`, `language`, `thumbnail_url`, `is_mature`, `started_at`): they describe individual streamers, not game-level activity, and the research question does not need them. `id` is used only to remove duplicates before counting.
+- `type`, `game_id`, `game_name` per stream: constant (`live`, `490744`, `Stardew Valley`) because the request already filters by game.
+- `pagination.cursor`: used only to request the next page.
 
-## Proposal 2: Promotions on protein-labeled products at Israeli supermarkets
+The complete responses remain in `raw/`. Because `normalise.sh` rebuilds `dataset.csv` from all of `raw/`, a column can be added later without losing history.
 
-**What it is:** We want to track how promotions on products marketed as high-protein, such as protein yogurts, bars, and snacks, change over time. We would preselect a small, fixed basket of protein-labeled products and use their unique product codes to automatically track their promotions over time. We would initially consider **Carrefour** as an example source and compare a small number of branches: how often these products are on promotion, how long promotions last, and whether offers differ between branches. If Carrefour's dataset is already being used by another group or proves unsuitable, we could use a similar public dataset from another chain, such as **Hazi Hinam** or **Shufersal**, instead.
+## v. Source field → schema column
 
-- **Content:** Product names and codes, regular prices, promotion descriptions, promotion start/end dates, and branch identifiers. Price and promotion files would be used together to identify which selected products are on promotion.
-- **URLs:**
-  - Initial example — Carrefour public price-transparency portal: https://prices.carrefour.co.il/
-  - Possible alternative — Hazi Hinam public price-file portal: https://shop.hazi-hinam.co.il/Prices
-  - Possible alternative — Shufersal price-transparency portal: https://prices.shufersal.co.il/ 
-  - These portals publish branch-level price and promotion information, commonly as compressed XML files (`.gz`). Relevant file categories include `PriceFull`, `PromoFull`, and store information, although exact availability and file details can vary by chain.
-- **Update frequency:** The Carrefour listing checked on 2026-11-06 contained timestamped `PriceFull` and `PromoFull` files and multiple incremental `Price` updates during the day. **Planned collection:** approximately once a day, however the longer-term publication schedule would be verified before implementation.
-- **Expected sample size:** The four downloaded full files (prices and promotions for branches 010 and 009) total **2,300,619 compressed bytes**, approximately **2.30 MB per daily collection**. At one collection a day for 13 weeks (91 days), this would be approximately **209.4 MB**, assuming similar sizes. This is below the project's 500 MB limit, but future growth and other stored files must also be monitored. These files include many products, leading to a much smaller processed protein-product dataset.
-- **Key / password:** Carrefour's listing and the four sample files were retrieved without a login, subscription, or API key. Download links contain the publication date and filename, so collection must obtain current links from the listing. Access to the alternative chains has not been tested.
-- **Data sample:** Actual price and promotion files downloaded on **2026-11-06 at approximately 13:53 UTC**, from Carrefour's public portal, without credentials. The sample below is from branch **010**, listed by the portal as Carrefour Hyper Kfar Saba. The portal's product name is preserved as supplied, including its abbreviation. These are selected XML fields from the downloaded files, retaining their original hierarchy and values. Other fields, products, and promotion items are omitted.
+| Source field (path in raw JSON) | Schema column | Transformation |
+|---|---|---|
+| `retrieval_started_utc` (added by our collection) | `collected_at_utc` | Copied unchanged |
+| `game_name` (added by our collection) | `game_name` | Copied unchanged |
+| `steam.response.player_count` | `steam_player_count` | Copied if `steam.response.result` = 1, otherwise empty |
+| `twitch_stream_pages[].data[].viewer_count` | `twitch_viewer_count` | Sum over all pages, after removing duplicate `id`s |
+| `twitch_stream_pages[].data[].id` | `twitch_stream_count` | Count of unique `id`s over all pages |
 
-Files downloaded to check access and compressed sample sizes:
+## vi. Expected size after one semester
 
-| Branch | Source file | Compressed bytes |
-|---|---|---:|
-| 010 | [PriceFull](https://prices.carrefour.co.il/20261106/PriceFull7290055700007-001-010-20261106-051009.gz) | 883,097 |
-| 010 | [PromoFull](https://prices.carrefour.co.il/20261106/PromoFull7290055700007-001-010-20261106-051121.gz) | 238,210 |
-| 009 | [PriceFull](https://prices.carrefour.co.il/20261106/PriceFull7290055700007-001-009-20261106-051002.gz) | 968,182 |
-| 009 | [PromoFull](https://prices.carrefour.co.il/20261106/PromoFull7290055700007-001-009-20261106-051055.gz) | 211,130 |
+Assumptions: 13 weeks (91 days) × 12 collections per day = **1,092 collections**.
 
-Price-file excerpt:
+| Target | Measured per collection | Expected after a semester |
+|---|---|---|
+| `raw/` (uncompressed JSON) | 70,821 bytes (sample with 87 streams) | ≈ 77.3 MB |
+| `raw/` (if gzip-compressed) | 11,884 bytes | ≈ 13.0 MB |
+| `data/dataset.csv` | 58 bytes per row + 86-byte header | ≈ 63 KB |
 
-```xml
-<Root>
-  <ChainID>7290055700007</ChainID>
-  <SubChainID>001</SubChainID>
-  <StoreID>010</StoreID>
-  <Items>
-    <Item>
-      <PriceUpdateTime>2025-06-03T08:29:14.000</PriceUpdateTime>
-      <ItemCode>7290116934020</ItemCode>
-      <ItemName>יוגורט חלבון גו 20 ג</ItemName>
-      <Quantity>200.00</Quantity>
-      <ItemPrice>6.50</ItemPrice>
-    </Item>
-  </Items>
-</Root>
-```
-
-Promotion-file excerpt for the same product:
-
-```xml
-<Root>
-  <ChainID>7290055700007</ChainID>
-  <SubChainID>001</SubChainID>
-  <StoreID>010</StoreID>
-  <Promotions>
-    <Promotion>
-      <PromotionID>0011459283</PromotionID>
-      <PromotionDescription>יוגורט גו סמיך 0% יופלה עד 200 גרם</PromotionDescription>
-      <PromotionStartDateTime>2026-11-02T00:00:00.000</PromotionStartDateTime>
-      <PromotionEndDateTime>2026-12-11T23:59:00.000</PromotionEndDateTime>
-      <ClubID>0</ClubID>
-      <Groups>
-        <Group>
-          <GroupID>1</GroupID>
-          <PromotionItems>
-            <PromotionItem>
-              <ItemCode>7290116934020</ItemCode>
-              <RewardType>10</RewardType>
-              <MinQty>4</MinQty>
-              <DiscountedPrice>20.90</DiscountedPrice>
-            </PromotionItem>
-          </PromotionItems>
-        </Group>
-      </Groups>
-    </Promotion>
-  </Promotions>
-</Root>
-```
-
-The same `ItemCode` (`7290116934020`) appears in both files, demonstrating how a protein-labeled product can be matched to a promotion. `ItemPrice` is the listed regular price; `MinQty` and `DiscountedPrice` belong to a multi-buy promotion and must not be interpreted as a single-unit promotional price. Source promotion timestamps have no timezone offset; the UTC time above records retrieval only.
-
-**Practical consideration:** Price and promotion files are separate and must be matched by product code. Promotions take different forms (for example, multi-buy or club-member offers), so our initial focus would be on whether a product is on promotion, not necessarily calculating an exact percentage discount. We would choose one retailer after checking access and the course staff's approval.
-
-## Our ranking
-
-1. **Steam vs. Twitch — first choice.** The data changes frequently, is returned as JSON, and offers a clear comparison between two independent sources.
-2. **Protein-product supermarket promotions — second choice.** It has a useful time-based comparison and publicly published data, but compressed XML files and product/promotion matching may take more work.
+Raw file size grows with the number of live streams: each stream adds about 0.8 KB. Even if every collection were twice the size of the sample, `raw/` would be about 155 MB, below the project's 500 MB limit. `dataset.csv` has one row per collection, so its size does not depend on the number of streams.
