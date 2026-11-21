@@ -65,9 +65,12 @@ collected_at_utc,game_name,steam_player_count,twitch_viewer_count,twitch_stream_
 - `retrieval_finished_utc`: a collection takes about 2 seconds, which is negligible against a 2-hour interval.
 - `steam_app_id`, `twitch_game_id`, and the whole `twitch_game_lookup` object (`id`, `name`, `box_art_url`, `igdb_id`): constant for a single game. They are documented in section i instead.
 - Steam `result`: a status flag used only to validate `player_count`.
-- Per-stream fields (`user_id`, `user_login`, `user_name`, `title`, `tags`, `tag_ids`, `language`, `thumbnail_url`, `is_mature`, `started_at`): they describe individual streamers, not game-level activity, and the research question does not need them. `id` is used only to remove duplicates before counting.
-- `type`, `game_id`, `game_name` per stream: constant (`live`, `490744`, `Stardew Valley`) because the request already filters by game.
 - `pagination.cursor`: used only to request the next page.
+
+**Fields still in debate pre automatic collection:**
+- `type`, `game_id`, `game_name` per stream: constant (`live`, `490744`, `Stardew Valley`) because the request already filters by game.
+- Per-stream fields (`user_id`, `user_login`, `user_name`, `title`, `tag_ids` (always empty), `thumbnail_url`, `started_at`): they describe individual streamers, not game-level activity, and the research question does not need them. `id` is used only to remove duplicates before counting.
+- We propose keeping specific per-stream fields `tags`, `language` and `is_mature` as they may contain extra information useful for twitch viewer segmentation during analysis. We'd rather collect the very lightweight information and have it yield no substantial results than regret not having collected it to begin with.
 
 The complete responses remain in `raw/`. Because `normalise.sh` rebuilds `dataset.csv` from all of `raw/`, a column can be added later without losing history.
 
