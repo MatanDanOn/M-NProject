@@ -1,0 +1,240 @@
+{
+  "retrieval_started_utc": "2026-11-21T12:31:12+00:00",
+  "retrieval_finished_utc": "2026-11-21T12:31:14+00:00",
+  "game_name": "Stardew Valley",
+  "steam_app_id": 413150,
+  "twitch_game_id": "490744",
+  "steam": {
+    "response": {
+      "player_count": 69546,
+      "result": 1
+    }
+  },
+  "twitch_game_lookup": {
+    "data": [
+      {
+        "id": "490744",
+        "name": "Stardew Valley",
+        "box_art_url": "https://static-cdn.jtvnw.net/ttv-boxart/490744_IGDB-{width}x{height}.jpg",
+        "igdb_id": "17000"
+      }
+    ]
+  },
+  "twitch_stream_pages": [
+    {
+      "data": [
+        {
+          "viewer_count": 29,
+          "strem_id": "316347434729"
+        },
+        {
+          "viewer_count": 14,
+          "strem_id": "319997667415"
+        },
+        {
+          "viewer_count": 13,
+          "strem_id": "316313130984"
+        },
+        {
+          "viewer_count": 12,
+          "strem_id": "318424147427"
+        },
+        {
+          "viewer_count": 12,
+          "strem_id": "316373773674"
+        },
+        {
+          "viewer_count": 10,
+          "strem_id": "319495347942"
+        },
+        {
+          "viewer_count": 8,
+          "strem_id": "316345630825"
+        },
+        {
+          "viewer_count": 8,
+          "strem_id": "322346737241"
+        },
+        {
+          "viewer_count": 7,
+          "strem_id": "316374005098"
+        },
+        {
+          "viewer_count": 7,
+          "strem_id": "316317201000"
+        },
+        {
+          "viewer_count": 7,
+          "strem_id": "316317176424"
+        },
+        {
+          "viewer_count": 6,
+          "strem_id": "319307098727"
+        },
+        {
+          "viewer_count": 6,
+          "strem_id": "318366892130"
+        },
+        {
+          "viewer_count": 5,
+          "strem_id": "316275359699"
+        },
+        {
+          "viewer_count": 5,
+          "strem_id": "322528482523"
+        },
+        {
+          "viewer_count": 4,
+          "strem_id": "316611692653"
+        },
+        {
+          "viewer_count": 4,
+          "strem_id": "319616299509"
+        },
+        {
+          "viewer_count": 4,
+          "strem_id": "317318176342"
+        },
+        {
+          "viewer_count": 4,
+          "strem_id": "317279970005"
+        },
+        {
+          "viewer_count": 3,
+          "strem_id": "319531787126"
+        },
+        {
+          "viewer_count": 3,
+          "strem_id": "322527714779"
+        },
+        {
+          "viewer_count": 3,
+          "strem_id": "316316041960"
+        },
+        {
+          "viewer_count": 3,
+          "strem_id": "319421134181"
+        },
+        {
+          "viewer_count": 3,
+          "strem_id": "316251345618"
+        },
+        {
+          "viewer_count": 2,
+          "strem_id": "318681759960"
+        },
+        {
+          "viewer_count": 2,
+          "strem_id": "316316858600"
+        },
+        {
+          "viewer_count": 2,
+          "strem_id": "318367991778"
+        },
+        {
+          "viewer_count": 2,
+          "strem_id": "318368531938"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "317922649847"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "321218280542"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316317146984"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "318424873699"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "321514393696"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "319421947621"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "317933074679"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316753811186"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "319424491749"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "321218187230"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "319496967526"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "321515884640"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316228717905"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "318425988964"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316576831467"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316317194216"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "322392461018"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316741601137"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316815718515"
+        },
+        {
+          "viewer_count": 1,
+          "strem_id": "316316846056"
+        },
+        {
+          "viewer_count": 0,
+          "strem_id": "322528301019"
+        },
+        {
+          "viewer_count": 0,
+          "strem_id": "322346295257"
+        },
+        {
+          "viewer_count": 0,
+          "strem_id": "319423664997"
+        },
+        {
+          "viewer_count": 0,
+          "strem_id": "321516297696"
+        }
+      ]
+    },
+    {
+      "data": []
+    }
+  ]
+}
