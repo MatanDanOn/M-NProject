@@ -13,15 +13,29 @@
 
 `413150` is the Steam app ID and `490744` is the Twitch game ID of *Stardew Valley*.
 
-A collection makes 1 Steam request and 3 Twitch requests (game lookup + 2 stream pages in the current sample). At 12 collections per day, this is far below both rate limits.
+A collection makes 1 Steam request and, on Twitch, 1 login (app access token) request plus one request per stream page (2 pages in the current sample). The game ID is fixed in `collect.sh`, so the game lookup is not repeated. Retries of failed requests add at most 3 requests each. At 12 collections per day, this is far below both rate limits.
 
 ## ii. What is collected
 
 Each collection is saved as one JSON file under `raw/YYYY-mm-dd/HHMM.json` (UTC). The file contains:
 
 - **Steam:** the number of players currently in *Stardew Valley* (`player_count`) and a result flag (`result`).
-- **Twitch:** every live *Stardew Valley* stream at collection time, across all pages, with each stream's `viewer_count`.
+- **Twitch:** every live *Stardew Valley* stream at collection time, across all pages (`twitch_stream_pages`). For each stream we keep `id`, `viewer_count`, `language` and `tags`.
 - **Metadata added by our collection:** retrieval start/end time (UTC), game name, Steam app ID and Twitch game ID.
+- **Collection status (added by our collection):**
+  - `collection_status`: `complete` if both sources succeeded, `partial` if exactly one source failed.
+  - `source_status`: `{"steam": "ok" | "failed", "twitch": "ok" | "failed"}`.
+
+**When a source fails** (`bin/collect.sh`):
+
+- Each source is collected independently. Temporary errors (timeouts, HTTP 429/5xx) are retried by `curl` up to 3 times.
+- If Steam fails, `steam` is saved as `null` and Twitch is still collected.
+- If Twitch fails at any step (login, any page, or a repeated pagination cursor), all Twitch pages from that attempt are discarded and `twitch_stream_pages` is saved as `null`. An incomplete pagination sequence is never kept, because a partial list of streams would give a viewer total that looks valid but is too low.
+- If both sources fail, no snapshot is created. The failure is written to the error log (stderr).
+- A missing value is never estimated or filled in from nearby collections. It stays missing.
+- Exit codes: `0` = complete snapshot saved; `2` = partial snapshot saved; `1` = no snapshot saved (both sources failed, or a file for that minute already exists).
+
+The four manual samples in `raw/` (2026-11-16 to 2026-11-21) were saved before `collect.sh` existed. They contain the full API responses and have no `collection_status` or `source_status` fields; all four are complete.
 
 Example (`raw/2026-11-16/1610.json`): Steam reported 50,401 players; Twitch returned 87 live streams on 2 pages (the second page was empty), with 564 viewers in total.
 
@@ -31,18 +45,19 @@ Example (`raw/2026-11-16/1610.json`): Steam reported 50,401 players; Twitch retu
 - The Twitch viewer total is a sum over streams fetched in sequential page requests. It is not an atomic snapshot and not a count of unique people. Streams can shift between pages, so duplicate stream IDs must be removed before summing.
 - Steam may cache its responses, so the retrieval time is not guaranteed to be the exact measurement time.
 - Both values are snapshots every 2 hours. Changes between collections are not observed.
+- A partial snapshot contains only one of the two measurements. It can be used for single-source analysis, but not for the paired Steam–Twitch comparison.
 
 ## iii. Schema (`data/dataset.csv`)
 
-One row per collection (per raw file). The first line is a header.
+One row per collection (per raw file). The first line is a header. An empty cell means the value was not measured; it is never `0` and never estimated. The paired Steam–Twitch comparison uses only rows where both `steam_player_count` and `twitch_viewer_count` are present.
 
 | Column | Content | Type / unit |
 |---|---|---|
 | `collected_at_utc` | Time the collection started | ISO 8601 timestamp, UTC (e.g. `2026-11-16T16:10:32+00:00`) |
 | `game_name` | Game the row describes | Text (`Stardew Valley`) |
-| `steam_player_count` | Players currently in the game on Steam | Integer, players. Empty if the Steam request failed or `result` ≠ 1 |
-| `twitch_viewer_count` | Sum of `viewer_count` over unique live streams | Integer, viewers (summed per stream). Empty if the Twitch request failed |
-| `twitch_stream_count` | Number of unique live streams | Integer, streams. `0` is a valid value (no live streams) |
+| `steam_player_count` | Players currently in the game on Steam | Integer, players. Empty if `steam` is `null` (Steam failed or `result` ≠ 1) |
+| `twitch_viewer_count` | Sum of `viewer_count` over unique live streams | Integer, viewers (summed per stream). Empty if `twitch_stream_pages` is `null` (Twitch failed) |
+| `twitch_stream_count` | Number of unique live streams | Integer, streams. `0` is a valid value (no live streams). Empty if `twitch_stream_pages` is `null` |
 
 Example row, produced from the sample above:
 
@@ -79,9 +94,9 @@ The complete responses (containing whichever fields we choose to retain) remain 
 |---|---|---|
 | `retrieval_started_utc` (added by our collection) | `collected_at_utc` | Copied unchanged |
 | `game_name` (added by our collection) | `game_name` | Copied unchanged |
-| `steam.response.player_count` | `steam_player_count` | Copied if `steam.response.result` = 1, otherwise empty |
-| `twitch_stream_pages[].data[].viewer_count` | `twitch_viewer_count` | Sum over all pages, after removing duplicate `id`s |
-| `twitch_stream_pages[].data[].id` | `twitch_stream_count` | Count of unique `id`s over all pages |
+| `steam.response.player_count` | `steam_player_count` | Copied if `steam` is not `null` and `steam.response.result` = 1, otherwise empty |
+| `twitch_stream_pages[].data[].viewer_count` | `twitch_viewer_count` | Sum over all pages, after removing duplicate `id`s. Empty if `twitch_stream_pages` is `null` |
+| `twitch_stream_pages[].data[].id` | `twitch_stream_count` | Count of unique `id`s over all pages. Empty if `twitch_stream_pages` is `null` |
 
 ## vi. Expected size after one semester
 
