@@ -9,7 +9,7 @@ This file is updated throughout the semester.
 
 ## 1. What we collect and why
 
-We collect, every 2 hours, two live measurements of the game *Stardew Valley*:
+We collect two live measurements of the game *Stardew Valley*. The planned sampling interval is every 2 hours:
 
 - **Steam:** the number of players currently in the game.
 - **Twitch:** every live stream of the game, with its viewer count, language and tags.

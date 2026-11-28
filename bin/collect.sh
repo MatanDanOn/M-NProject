@@ -1,4 +1,5 @@
 #!/bin/bash
+set +x
 set -e -o pipefail   # Stop if a command fails, including curl in a pipeline.
 umask 077
 
